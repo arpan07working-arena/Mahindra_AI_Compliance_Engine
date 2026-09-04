@@ -18,4 +18,15 @@ An automated QA audit system designed for regional collection and customer servi
 * **Version Control & Hosting:** Git, GitHub, Streamlit Cloud
 
 ## System Architecture
-`Audio File (.mp3)` ➡️ `Streamlit UI` ➡️ `Gemini API Analysis` ➡️ `SQLite Database` ➡️ `Analytics Dashboard`
+## 🏗️ System Architecture
+
+```text
+  [ User Uploads .mp3/.wav ]
+              │
+              ▼
+    [ Streamlit Web UI ] ──(Audio Bytes & Prompt)──► [ Google Gemini 3.6 Flash ]
+              │                                                │
+      (Renders Dashboard)                                (JSON Payload)
+              ▲                                                │
+              │                                                ▼
+     [ Pandas / Charts ] ◄─── [ SQLite Database ] ◄─── [ Audit Parser ]

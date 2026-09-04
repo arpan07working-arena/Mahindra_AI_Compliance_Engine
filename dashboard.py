@@ -7,60 +7,65 @@ from google import genai
 from google.genai import types
 from database import init_db, save_audit, fetch_all_audits
 
-# Initialize SQLite database
+# Initialize database
 init_db()
 
-st.set_page_config(page_title="Mahindra Finance AI Compliance", layout="wide")
+st.set_page_config(
+    page_title="Mahindra Finance AI Compliance Engine",
+    page_icon="🛡️",
+    layout="wide"
+)
 
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not API_KEY:
-    st.error("GEMINI_API_KEY not found in environment!")
+    st.error("GEMINI_API_KEY missing! Add it to .env or Streamlit Secrets.")
     st.stop()
 
-# Initialize Gemini Client with official Google GenAI SDK
 client = genai.Client(api_key=API_KEY)
 
 st.title("🛡️ Mahindra Finance - Audio AI Compliance & Insights Engine")
-st.markdown("Automated QA audit system for regional collection and customer service calls.")
+st.caption("Automated QA & RBI Regulatory Compliance Audit System for Collection & Service Calls")
 
-# Setup Navigation Tabs
 tab1, tab2 = st.tabs(["🎙️ Audit New Call", "📊 Compliance History & Analytics"])
 
 # TAB 1: LIVE AUDIT
 with tab1:
     st.subheader("1. Upload Call Recording")
-    uploaded_file = st.file_uploader("Choose an audio file (.mp3 / .wav)", type=["mp3", "wav"])
+    uploaded_file = st.file_uploader("Upload Audio File (.mp3 / .wav)", type=["mp3", "wav"])
 
     if uploaded_file is not None:
         st.audio(uploaded_file, format="audio/mp3")
         
         if st.button("🚀 Run Compliance Audit", type="primary"):
-            with st.spinner("Transcribing audio and analyzing compliance metrics..."):
+            with st.spinner("Analyzing call against RBI guidelines & Mahindra Finance compliance rules..."):
                 try:
                     bytes_data = uploaded_file.getvalue()
                     mime_type = "audio/mp3" if uploaded_file.name.endswith(".mp3") else "audio/wav"
 
                     prompt = """
-                    You are an expert Quality Assurance AI Engineer at Mahindra Finance.
-                    Listen carefully to this customer service/collection call recording.
+                    You are a Senior Quality Assurance & Regulatory Compliance Auditor at Mahindra Finance.
+                    Audit this collection/customer service audio recording based on strict RBI Recovery Agent Guidelines.
 
-                    Perform two tasks:
-                    1. Generate an accurate verbatim transcript of the call.
-                    2. Audit the interaction based on compliance rules.
+                    Check for:
+                    1. Self-Identification: Agent states full name & company representation at the start.
+                    2. Tone & Professionalism: Zero abusive, harassing, or threatening language.
+                    3. Customer Sentiment: Cooperative, Angry, or Distressed.
+                    4. Promised Payment Date: Extract date string (e.g., YYYY-MM-DD or Day) or "None".
 
-                    You MUST respond strictly with a valid JSON object matching this schema:
+                    Respond STRICTLY with a valid JSON object matching this schema:
                     {
-                      "transcript": "Full text transcript of the audio",
+                      "transcript": "Full verbatim text transcript",
+                      "agent_identifies_self": true | false,
                       "customer_sentiment": "Cooperative" | "Angry" | "Distressed",
-                      "promised_payment_date": "string (e.g., Friday, 2026-09-05, or None)",
+                      "promised_payment_date": "string or None",
                       "agent_compliant": true | false,
-                      "summary": "Short 1-sentence summary of the call"
+                      "violations": ["List specific violations like 'No self-identification', 'Threatening tone' or 'None'"],
+                      "summary": "Short 1-sentence audit summary"
                     }
                     """
 
-                    # Send request using official SDK with gemini-3.6-flash
                     response = client.models.generate_content(
                         model='gemini-3.6-flash',
                         contents=[
@@ -83,27 +88,36 @@ with tab1:
                         parsed_audit.get("transcript")
                     )
 
-                    st.success("Audit Completed & Saved to Database!")
+                    st.success("Audit Completed & Logged to Database!")
                     st.divider()
 
-                    # Render metrics side-by-side
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric(label="Customer Sentiment", value=parsed_audit.get("customer_sentiment", "N/A"))
-                    col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment_date", "N/A"))
-                    col3.metric(
-                        label="Agent Compliance Status", 
-                        value="PASSED" if parsed_audit.get("agent_compliant") else "FAILED",
-                        delta="Compliant" if parsed_audit.get("agent_compliant") else "Non-Compliant"
+                    # Audit Scorecard Metrics
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Customer Sentiment", parsed_audit.get("customer_sentiment", "N/A"))
+                    col2.metric("Payment Promise", parsed_audit.get("promised_payment_date", "N/A"))
+                    col3.metric("Self-Identified", "YES" if parsed_audit.get("agent_identifies_self") else "NO")
+                    col4.metric(
+                        "RBI Compliance Status", 
+                        "PASSED" if parsed_audit.get("agent_compliant") else "FAILED",
+                        delta="Compliant" if parsed_audit.get("agent_compliant") else "Violation Detected",
+                        delta_color="normal" if parsed_audit.get("agent_compliant") else "inverse"
                     )
 
                     st.divider()
-                    st.subheader("2. Call Summary & Transcript")
+                    st.subheader("2. Compliance Findings & Transcript")
+                    
+                    violations = parsed_audit.get("violations", [])
+                    if violations and "None" not in violations:
+                        st.error(f"⚠️ **Detected Violations:** {', '.join(violations)}")
+                    else:
+                        st.success("✅ **No Regulatory Violations Detected.**")
+
                     st.info(f"**Executive Summary:** {parsed_audit.get('summary')}")
                     
                     with st.expander("📄 View Full Verbatim Transcript"):
                         st.write(parsed_audit.get("transcript"))
 
-                    with st.expander("🔍 View Raw JSON Output"):
+                    with st.expander("🔍 View Raw JSON Audit Payload"):
                         st.json(parsed_audit)
 
                 except Exception as e:
@@ -120,23 +134,25 @@ with tab2:
         
         st.dataframe(df[["Timestamp", "Sentiment", "Payment Date", "Compliant", "Summary"]], use_container_width=True)
         
-        # CSV Export Feature
-        csv_data = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Export Compliance Audit Report (CSV)",
-            data=csv_data,
-            file_name="mahindra_finance_compliance_report.csv",
-            mime="text/csv",
-            type="primary"
-        )
+        # Action Toolbar
+        col_dl, col_blank = st.columns([1, 3])
+        with col_dl:
+            csv_data = df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Export Compliance Report (CSV)",
+                data=csv_data,
+                file_name="mahindra_finance_compliance_report.csv",
+                mime="text/csv",
+                type="primary"
+            )
 
         st.divider()
-        st.subheader("Analytics Summary")
+        st.subheader("Analytics Overview")
         col_a, col_b = st.columns(2)
         col_a.write("**Customer Sentiment Distribution**")
         col_a.bar_chart(df["Sentiment"].value_counts())
         
-        col_b.write("**Agent Compliance Pass/Fail**")
+        col_b.write("**Agent Compliance Breakdown**")
         col_b.bar_chart(df["Compliant"].value_counts())
     else:
-        st.info("No audit records saved yet. Run an audit in Tab 1 to start populating data.")
+        st.info("No audit logs found. Run an audio evaluation in Tab 1 to populate metrics.")
