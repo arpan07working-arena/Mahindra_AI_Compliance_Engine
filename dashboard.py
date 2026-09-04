@@ -99,12 +99,22 @@ with tab1:
                     st.success("Audit Completed & Saved to Database!")
                     st.divider()
 
+                    # Columns must be defined right before rendering metrics
                     col1, col2, col3 = st.columns(3)
-                    col1, col2, col3 = st.columns(3)
-col1.metric(label="Customer Sentiment", value=parsed_audit.get("customer_sentiment", "N/A"))
-col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment_date", "N/A"))
-col3.metric(
-    label="Agent Compliance Status", 
-    value="PASSED" if parsed_audit.get("agent_compliant") else "FAILED",
-    delta="Compliant" if parsed_audit.get("agent_compliant") else "Non-Compliant"
-)
+                    col1.metric(label="Customer Sentiment", value=parsed_audit.get("customer_sentiment", "N/A"))
+                    col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment_date", "N/A"))
+                    col3.metric(
+                        label="Agent Compliance Status", 
+                        value="PASSED" if parsed_audit.get("agent_compliant") else "FAILED",
+                        delta="Compliant" if parsed_audit.get("agent_compliant") else "Non-Compliant"
+                    )
+
+                    st.divider()
+                    st.subheader("2. Call Summary & Transcript")
+                    st.info(f"**Executive Summary:** {parsed_audit.get('summary')}")
+                    
+                    with st.expander("📄 View Full Verbatim Transcript"):
+                        st.write(parsed_audit.get("transcript"))
+
+                    with st.expander("🔍 View Raw JSON Output"):
+                        st.json(parsed_audit)
