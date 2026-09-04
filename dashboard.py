@@ -20,6 +20,7 @@ if not API_KEY:
     st.error("GEMINI_API_KEY not found in environment!")
     st.stop()
 
+# Updated endpoint to standard Gemini 1.5 Flash model
 URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
 st.title("🛡️ Mahindra Finance - Audio AI Compliance & Insights Engine")
@@ -74,19 +75,27 @@ with tab1:
                 headers = {'Content-Type': 'application/json'}
 
                 success = False
-                for attempt in range(1, 4):
-                    response = requests.post(URL, headers=headers, data=json.dumps(payload))
-                    
-                    if response.status_code == 200:
-                        result_data = response.json()
-                        raw_json_string = result_data['candidates'][0]['content']['parts'][0]['text']
-                        parsed_audit = json.loads(raw_json_string)
-                        success = True
-                        break
-                    elif response.status_code == 503:
-                        time.sleep(2)
+                parsed_audit = None
 
-                if success:
+                for attempt in range(1, 4):
+                    try:
+                        response = requests.post(URL, headers=headers, data=json.dumps(payload))
+                        if response.status_code == 200:
+                            result_data = response.json()
+                            raw_json_string = result_data['candidates'][0]['content']['parts'][0]['text']
+                            parsed_audit = json.loads(raw_json_string)
+                            success = True
+                            break
+                        elif response.status_code == 503:
+                            time.sleep(2)
+                        else:
+                            st.error(f"API Error ({response.status_code}): {response.text}")
+                            break
+                    except Exception as e:
+                        st.error(f"Request Error: {str(e)}")
+                        break
+
+                if success and parsed_audit:
                     # Save audit result into database
                     save_audit(
                         parsed_audit.get("customer_sentiment"),
@@ -99,7 +108,7 @@ with tab1:
                     st.success("Audit Completed & Saved to Database!")
                     st.divider()
 
-                    # Columns must be defined right before rendering metrics
+                    # Define metrics columns inside the success block
                     col1, col2, col3 = st.columns(3)
                     col1.metric(label="Customer Sentiment", value=parsed_audit.get("customer_sentiment", "N/A"))
                     col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment_date", "N/A"))
@@ -118,3 +127,35 @@ with tab1:
 
                     with st.expander("🔍 View Raw JSON Output"):
                         st.json(parsed_audit)
+
+# TAB 2: HISTORICAL LOGS & ANALYTICS
+with tab2:
+    st.subheader("Historical Audit Records")
+    records = fetch_all_audits()
+    
+    if records:
+        df = pd.DataFrame(records, columns=["ID", "Timestamp", "Sentiment", "Payment Date", "Compliant", "Summary", "Transcript"])
+        df["Compliant"] = df["Compliant"].apply(lambda x: "PASSED" if x == 1 else "FAILED")
+        
+        st.dataframe(df[["Timestamp", "Sentiment", "Payment Date", "Compliant", "Summary"]], use_container_width=True)
+        
+        # CSV Export Feature
+        csv_data = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Export Compliance Audit Report (CSV)",
+            data=csv_data,
+            file_name="mahindra_finance_compliance_report.csv",
+            mime="text/csv",
+            type="primary"
+        )
+
+        st.divider()
+        st.subheader("Analytics Summary")
+        col_a, col_b = st.columns(2)
+        col_a.write("**Customer Sentiment Distribution**")
+        col_a.bar_chart(df["Sentiment"].value_counts())
+        
+        col_b.write("**Agent Compliance Pass/Fail**")
+        col_b.bar_chart(df["Compliant"].value_counts())
+    else:
+        st.info("No audit records saved yet. Run an audit in Tab 1 to start populating data.")
