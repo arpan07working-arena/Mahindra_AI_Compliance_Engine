@@ -21,7 +21,7 @@ if not API_KEY:
     st.stop()
 
 # Updated endpoint to standard Gemini 1.5 Flash model
-URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
 
 st.title("🛡️ Mahindra Finance - Audio AI Compliance & Insights Engine")
 st.markdown("Automated QA audit system for regional collection and customer service calls.")
