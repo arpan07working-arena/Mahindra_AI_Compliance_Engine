@@ -17,10 +17,10 @@ load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not API_KEY:
-    st.error("GEMINI_API_KEY not found in .env file!")
+    st.error("GEMINI_API_KEY not found in environment!")
     st.stop()
 
-URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={API_KEY}"
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
 
 st.title("🛡️ Mahindra Finance - Audio AI Compliance & Insights Engine")
 st.markdown("Automated QA audit system for regional collection and customer service calls.")
@@ -101,43 +101,4 @@ with tab1:
 
                     col1, col2, col3 = st.columns(3)
                     col1.metric(label="Customer Sentiment", value=parsed_audit.get("customer_sentiment", "N/A"))
-                    col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment_date", "N/A"))
-                    col3.metric(
-                        label="Agent Compliance Status", 
-                        value="PASSED" if parsed_audit.get("agent_compliant") else "FAILED",
-                        delta="Compliant" if parsed_audit.get("agent_compliant") else "Non-Compliant"
-                    )
-
-                    st.divider()
-                    st.subheader("2. Call Summary & Transcript")
-                    st.info(f"**Executive Summary:** {parsed_audit.get('summary')}")
-                    
-                    with st.expander("📄 View Full Verbatim Transcript"):
-                        st.write(parsed_audit.get("transcript"))
-
-                    with st.expander("🔍 View Raw JSON Output"):
-                        st.json(parsed_audit)
-                else:
-                    st.error("Failed to communicate with Gemini API.")
-
-# TAB 2: HISTORICAL LOGS
-with tab2:
-    st.subheader("Historical Audit Records")
-    records = fetch_all_audits()
-    
-    if records:
-        df = pd.DataFrame(records, columns=["ID", "Timestamp", "Sentiment", "Payment Date", "Compliant", "Summary", "Transcript"])
-        df["Compliant"] = df["Compliant"].apply(lambda x: "PASSED" if x == 1 else "FAILED")
-        
-        st.dataframe(df[["Timestamp", "Sentiment", "Payment Date", "Compliant", "Summary"]], use_container_width=True)
-        
-        st.divider()
-        st.subheader("Analytics Summary")
-        col_a, col_b = st.columns(2)
-        col_a.write("**Customer Sentiment Distribution**")
-        col_a.bar_chart(df["Sentiment"].value_counts())
-        
-        col_b.write("**Agent Compliance Pass/Fail**")
-        col_b.bar_chart(df["Compliant"].value_counts())
-    else:
-        st.info("No audit records saved yet. Run an audit in Tab 1 to start populating data.")
+                    col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment
