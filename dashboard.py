@@ -100,5 +100,11 @@ with tab1:
                     st.divider()
 
                     col1, col2, col3 = st.columns(3)
-                    col1.metric(label="Customer Sentiment", value=parsed_audit.get("customer_sentiment", "N/A"))
-                    col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment
+                    col1, col2, col3 = st.columns(3)
+col1.metric(label="Customer Sentiment", value=parsed_audit.get("customer_sentiment", "N/A"))
+col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment_date", "N/A"))
+col3.metric(
+    label="Agent Compliance Status", 
+    value="PASSED" if parsed_audit.get("agent_compliant") else "FAILED",
+    delta="Compliant" if parsed_audit.get("agent_compliant") else "Non-Compliant"
+)
