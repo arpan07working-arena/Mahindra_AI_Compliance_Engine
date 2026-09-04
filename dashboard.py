@@ -1,14 +1,13 @@
 import streamlit as st
-import requests
-import json
-import base64
-import time
 import os
+import json
 import pandas as pd
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 from database import init_db, save_audit, fetch_all_audits
 
-# Initialize SQLite database
+# Initialize database
 init_db()
 
 st.set_page_config(page_title="Mahindra Finance AI Compliance", layout="wide")
@@ -20,13 +19,12 @@ if not API_KEY:
     st.error("GEMINI_API_KEY not found in environment!")
     st.stop()
 
-# Updated endpoint to standard Gemini 1.5 Flash model
-URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
+# Initialize Gemini Client
+client = genai.Client(api_key=API_KEY)
 
 st.title("🛡️ Mahindra Finance - Audio AI Compliance & Insights Engine")
 st.markdown("Automated QA audit system for regional collection and customer service calls.")
 
-# Setup Navigation Tabs
 tab1, tab2 = st.tabs(["🎙️ Audit New Call", "📊 Compliance History & Analytics"])
 
 # TAB 1: LIVE AUDIT
@@ -39,63 +37,42 @@ with tab1:
         
         if st.button("🚀 Run Compliance Audit", type="primary"):
             with st.spinner("Transcribing audio and analyzing compliance metrics..."):
-                bytes_data = uploaded_file.getvalue()
-                encoded_audio = base64.b64encode(bytes_data).decode("utf-8")
-                
-                prompt = """
-                You are an expert Quality Assurance AI Engineer at Mahindra Finance.
-                Listen carefully to this customer service/collection call recording.
+                try:
+                    bytes_data = uploaded_file.getvalue()
+                    mime_type = "audio/mp3" if uploaded_file.name.endswith(".mp3") else "audio/wav"
 
-                Perform two tasks:
-                1. Generate an accurate verbatim transcript of the call.
-                2. Audit the interaction based on compliance rules.
+                    prompt = """
+                    You are an expert Quality Assurance AI Engineer at Mahindra Finance.
+                    Listen carefully to this customer service/collection call recording.
 
-                You MUST respond strictly with a valid JSON object matching this schema:
-                {
-                  "transcript": "Full text transcript of the audio",
-                  "customer_sentiment": "Cooperative" | "Angry" | "Distressed",
-                  "promised_payment_date": "string (e.g., Friday, 2026-09-05, or None)",
-                  "agent_compliant": true | false,
-                  "summary": "Short 1-sentence summary of the call"
-                }
+                    Perform two tasks:
+                    1. Generate an accurate verbatim transcript of the call.
+                    2. Audit the interaction based on compliance rules.
 
-                Do NOT include markdown backticks (such as ```json) or any conversational text. Return ONLY the raw JSON object.
-                """
+                    You MUST respond strictly with a valid JSON object matching this schema:
+                    {
+                      "transcript": "Full text transcript of the audio",
+                      "customer_sentiment": "Cooperative" | "Angry" | "Distressed",
+                      "promised_payment_date": "string (e.g., Friday, 2026-09-05, or None)",
+                      "agent_compliant": true | false,
+                      "summary": "Short 1-sentence summary of the call"
+                    }
+                    """
 
-                payload = {
-                    "contents": [{
-                        "parts": [
-                            {"inline_data": {"mime_type": "audio/mp3", "data": encoded_audio}},
-                            {"text": prompt}
-                        ]
-                    }],
-                    "generationConfig": {"response_mime_type": "application/json"}
-                }
+                    # Send request using SDK
+                    response = client.models.generate_content(
+                        model='gemini-2.5-flash',
+                        contents=[
+                            types.Part.from_bytes(data=bytes_data, mime_type=mime_type),
+                            prompt
+                        ],
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json"
+                        )
+                    )
 
-                headers = {'Content-Type': 'application/json'}
+                    parsed_audit = json.loads(response.text)
 
-                success = False
-                parsed_audit = None
-
-                for attempt in range(1, 4):
-                    try:
-                        response = requests.post(URL, headers=headers, data=json.dumps(payload))
-                        if response.status_code == 200:
-                            result_data = response.json()
-                            raw_json_string = result_data['candidates'][0]['content']['parts'][0]['text']
-                            parsed_audit = json.loads(raw_json_string)
-                            success = True
-                            break
-                        elif response.status_code == 503:
-                            time.sleep(2)
-                        else:
-                            st.error(f"API Error ({response.status_code}): {response.text}")
-                            break
-                    except Exception as e:
-                        st.error(f"Request Error: {str(e)}")
-                        break
-
-                if success and parsed_audit:
                     # Save audit result into database
                     save_audit(
                         parsed_audit.get("customer_sentiment"),
@@ -108,7 +85,6 @@ with tab1:
                     st.success("Audit Completed & Saved to Database!")
                     st.divider()
 
-                    # Define metrics columns inside the success block
                     col1, col2, col3 = st.columns(3)
                     col1.metric(label="Customer Sentiment", value=parsed_audit.get("customer_sentiment", "N/A"))
                     col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment_date", "N/A"))
@@ -127,6 +103,9 @@ with tab1:
 
                     with st.expander("🔍 View Raw JSON Output"):
                         st.json(parsed_audit)
+
+                except Exception as e:
+                    st.error(f"Audit Processing Error: {str(e)}")
 
 # TAB 2: HISTORICAL LOGS & ANALYTICS
 with tab2:
