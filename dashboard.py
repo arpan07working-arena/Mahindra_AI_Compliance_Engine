@@ -7,7 +7,7 @@ from google import genai
 from google.genai import types
 from database import init_db, save_audit, fetch_all_audits
 
-# Initialize database
+# Initialize SQLite database
 init_db()
 
 st.set_page_config(page_title="Mahindra Finance AI Compliance", layout="wide")
@@ -19,12 +19,13 @@ if not API_KEY:
     st.error("GEMINI_API_KEY not found in environment!")
     st.stop()
 
-# Initialize Gemini Client
+# Initialize Gemini Client with official Google GenAI SDK
 client = genai.Client(api_key=API_KEY)
 
 st.title("🛡️ Mahindra Finance - Audio AI Compliance & Insights Engine")
 st.markdown("Automated QA audit system for regional collection and customer service calls.")
 
+# Setup Navigation Tabs
 tab1, tab2 = st.tabs(["🎙️ Audit New Call", "📊 Compliance History & Analytics"])
 
 # TAB 1: LIVE AUDIT
@@ -59,9 +60,9 @@ with tab1:
                     }
                     """
 
-                    # Send request using SDK
+                    # Send request using official SDK with gemini-3.6-flash
                     response = client.models.generate_content(
-                        model='gemini-2.5-flash',
+                        model='gemini-3.6-flash',
                         contents=[
                             types.Part.from_bytes(data=bytes_data, mime_type=mime_type),
                             prompt
@@ -85,6 +86,7 @@ with tab1:
                     st.success("Audit Completed & Saved to Database!")
                     st.divider()
 
+                    # Render metrics side-by-side
                     col1, col2, col3 = st.columns(3)
                     col1.metric(label="Customer Sentiment", value=parsed_audit.get("customer_sentiment", "N/A"))
                     col2.metric(label="Promised Payment Date", value=parsed_audit.get("promised_payment_date", "N/A"))
