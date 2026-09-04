@@ -16,6 +16,68 @@ st.set_page_config(
     layout="wide"
 )
 
+# Custom CSS for Modern Fintech Branding
+st.markdown("""
+<style>
+    /* Main Background Accent & Font Styling */
+    .stApp {
+        background-color: #0E1117;
+    }
+    
+    /* Header Card Styling */
+    .header-card {
+        background: linear-gradient(135deg, #1E222D 0%, #11141C 100%);
+        padding: 24px;
+        border-radius: 12px;
+        border-left: 6px solid #D32F2F;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        margin-bottom: 24px;
+    }
+    .header-title {
+        color: #FFFFFF;
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0;
+    }
+    .header-subtitle {
+        color: #9E9E9E;
+        font-size: 14px;
+        margin-top: 4px;
+    }
+
+    /* Metric Cards Custom Styling */
+    [data-testid="stMetricValue"] {
+        font-size: 22px !important;
+        font-weight: 700 !important;
+    }
+    div[data-testid="metric-container"] {
+        background-color: #1A1D24;
+        border: 1px solid #2D313E;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    /* Tab Header Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 48px;
+        background-color: #161920;
+        border-radius: 8px 8px 0px 0px;
+        color: #B0B0B0;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #222733 !important;
+        color: #FF5252 !important;
+        border-bottom: 2px solid #D32F2F !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
 
@@ -25,10 +87,15 @@ if not API_KEY:
 
 client = genai.Client(api_key=API_KEY)
 
-st.title("🛡️ Mahindra Finance - Audio AI Compliance & Insights Engine")
-st.caption("Automated QA & RBI Regulatory Compliance Audit System for Collection & Service Calls")
+# Branded Banner Header
+st.markdown("""
+<div class="header-card">
+    <div class="header-title">🛡️ Mahindra Finance - Audio AI Compliance Engine</div>
+    <div class="header-subtitle">Automated QA & RBI Regulatory Compliance Audit System for Collection & Customer Service Calls</div>
+</div>
+""", unsafe_allow_html=True)
 
-tab1, tab2 = st.tabs(["🎙️ Audit New Call", "📊 Compliance History & Analytics"])
+tab1, tab2 = st.tabs(["🎙️ Live Audio Audit", "📊 Compliance History & Analytics"])
 
 # TAB 1: LIVE AUDIT
 with tab1:
@@ -134,17 +201,15 @@ with tab2:
         
         st.dataframe(df[["Timestamp", "Sentiment", "Payment Date", "Compliant", "Summary"]], use_container_width=True)
         
-        # Action Toolbar
-        col_dl, col_blank = st.columns([1, 3])
-        with col_dl:
-            csv_data = df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 Export Compliance Report (CSV)",
-                data=csv_data,
-                file_name="mahindra_finance_compliance_report.csv",
-                mime="text/csv",
-                type="primary"
-            )
+        # Download Action
+        csv_data = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Export Compliance Report (CSV)",
+            data=csv_data,
+            file_name="mahindra_finance_compliance_report.csv",
+            mime="text/csv",
+            type="primary"
+        )
 
         st.divider()
         st.subheader("Analytics Overview")
