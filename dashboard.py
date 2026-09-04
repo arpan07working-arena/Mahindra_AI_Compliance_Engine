@@ -16,64 +16,76 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for Modern Fintech Branding
+# Modern Light/Glassmorphism CSS Injection
 st.markdown("""
 <style>
-    /* Main Background Accent & Font Styling */
+    /* Main Canvas Background */
     .stApp {
-        background-color: #0E1117;
+        background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%);
+        color: #0F172A;
     }
     
-    /* Header Card Styling */
+    /* Top Banner Header */
     .header-card {
-        background: linear-gradient(135deg, #1E222D 0%, #11141C 100%);
-        padding: 24px;
-        border-radius: 12px;
-        border-left: 6px solid #D32F2F;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        margin-bottom: 24px;
+        background: #FFFFFF;
+        padding: 28px 32px;
+        border-radius: 16px;
+        border-left: 8px solid #D32F2F;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+        margin-bottom: 28px;
     }
     .header-title {
-        color: #FFFFFF;
-        font-size: 28px;
-        font-weight: 700;
+        color: #0F172A;
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
         margin: 0;
     }
     .header-subtitle {
-        color: #9E9E9E;
-        font-size: 14px;
-        margin-top: 4px;
+        color: #475569;
+        font-size: 15px;
+        font-weight: 500;
+        margin-top: 6px;
     }
 
-    /* Metric Cards Custom Styling */
+    /* Metric Containers */
+    div[data-testid="metric-container"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0 !important;
+        padding: 20px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    }
     [data-testid="stMetricValue"] {
-        font-size: 22px !important;
+        color: #0F172A !important;
+        font-size: 24px !important;
         font-weight: 700 !important;
     }
-    div[data-testid="metric-container"] {
-        background-color: #1A1D24;
-        border: 1px solid #2D313E;
-        padding: 16px;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    [data-testid="stMetricLabel"] {
+        color: #64748B !important;
+        font-weight: 600 !important;
     }
 
-    /* Tab Header Styling */
+    /* Tab Custom Styling */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 12px;
+        border-bottom: 2px solid #E2E8F0;
     }
     .stTabs [data-baseweb="tab"] {
-        height: 48px;
-        background-color: #161920;
-        border-radius: 8px 8px 0px 0px;
-        color: #B0B0B0;
-        padding-left: 20px;
-        padding-right: 20px;
+        height: 50px;
+        background-color: #FFFFFF;
+        border-radius: 10px 10px 0px 0px;
+        color: #475569;
+        font-weight: 600;
+        padding-left: 24px;
+        padding-right: 24px;
+        border: 1px solid #E2E8F0;
+        border-bottom: none;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #222733 !important;
-        color: #FF5252 !important;
-        border-bottom: 2px solid #D32F2F !important;
+        background-color: #D32F2F !important;
+        color: #FFFFFF !important;
+        border-color: #D32F2F !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -87,10 +99,10 @@ if not API_KEY:
 
 client = genai.Client(api_key=API_KEY)
 
-# Branded Banner Header
+# Branded Header
 st.markdown("""
 <div class="header-card">
-    <div class="header-title">🛡️ Mahindra Finance - Audio AI Compliance Engine</div>
+    <div class="header-title">🛡️ Mahindra Finance — AI Compliance Engine</div>
     <div class="header-subtitle">Automated QA & RBI Regulatory Compliance Audit System for Collection & Customer Service Calls</div>
 </div>
 """, unsafe_allow_html=True)
@@ -201,7 +213,7 @@ with tab2:
         
         st.dataframe(df[["Timestamp", "Sentiment", "Payment Date", "Compliant", "Summary"]], use_container_width=True)
         
-        # Download Action
+        # CSV Download Button
         csv_data = df.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="📥 Export Compliance Report (CSV)",
